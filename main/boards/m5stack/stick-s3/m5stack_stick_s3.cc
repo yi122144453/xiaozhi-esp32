@@ -18,6 +18,7 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include "M5PM1.h"
+#include "pet_display.h"
 
 #define TAG "M5StackStickS3"
 
@@ -58,7 +59,7 @@ class M5StackStickS3Board : public WifiBoard {
 private:
     Button boot_button_;
     Button user_button_;
-    LcdDisplay* display_;
+    PetDisplay* display_;
     i2c_master_bus_handle_t i2c_bus_;
     M5PM1* pmic_;
 
@@ -146,7 +147,7 @@ private:
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
         esp_lcd_panel_disp_on_off(panel, true);
 
-        display_ = new SpiLcdDisplay(panel_io, panel,
+        display_ = new PetDisplay(panel_io, panel,
                                      DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y,
                                      DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
     }
@@ -158,6 +159,10 @@ private:
                 EnterWifiConfigMode();
             }
             app.ToggleChatState();
+        });
+
+        boot_button_.OnLongPress([this]() {
+            if (display_) display_->PlayWithPet();
         });
 
         // User button on GPIO12: single click sets stored volume to 70%
@@ -172,6 +177,11 @@ private:
             } else {
                 ESP_LOGW(TAG, "User button pressed but codec is not available yet");
             }
+        });
+
+        // B 键长按：喂宠物
+        user_button_.OnLongPress([this]() {
+            if (display_) display_->FeedPet();
         });
     }
 
